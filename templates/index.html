@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Radar</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons for vector symbols -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background mesh/grid effect -->
+    <div class="bg-mesh"></div>
+    <div class="bg-grid"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand-group">
+                <div class="logo-container">
+                    <svg class="bq-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#grad1)" />
+                        <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="url(#grad2)" />
+                        <path d="M2 12L12 17L22 12V7L12 12L2 7V12Z" fill="url(#grad3)" opacity="0.8"/>
+                        <defs>
+                            <linearGradient id="grad1" x1="2" y1="7" x2="22" y2="7" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#4285F4"/>
+                                <stop offset="100%" stop-color="#34A853"/>
+                            </linearGradient>
+                            <linearGradient id="grad2" x1="2" y1="17" x2="22" y2="17" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#EA4335"/>
+                                <stop offset="100%" stop-color="#FBBC05"/>
+                            </linearGradient>
+                            <linearGradient id="grad3" x1="2" y1="9.5" x2="22" y2="9.5" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#4285F4"/>
+                                <stop offset="100%" stop-color="#FBBC05"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="title-meta">
+                    <h1>BigQuery <span>Release Radar</span></h1>
+                    <p class="subtitle">Real-time Google Cloud data platform updates</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="cache-status" id="cacheStatus">Loading cache info...</div>
+                <button class="btn btn-primary" id="refreshBtn">
+                    <i data-lucide="rotate-cw" id="refreshIcon"></i>
+                    <span>Refresh Feed</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <section class="stats-grid">
+            <div class="stat-card" data-filter="all" id="statCardAll">
+                <div class="stat-icon-wrapper blue">
+                    <i data-lucide="list"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="statTotal">-</h3>
+                    <p>Total Updates</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="feature" id="statCardFeature">
+                <div class="stat-icon-wrapper green">
+                    <i data-lucide="sparkles"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="statFeatures">-</h3>
+                    <p>Features Added</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="changed" id="statCardChanged">
+                <div class="stat-icon-wrapper orange">
+                    <i data-lucide="git-commit"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="statChanges">-</h3>
+                    <p>Changes Made</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="deprecated" id="statCardDeprecated">
+                <div class="stat-icon-wrapper red">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="statDeprecations">-</h3>
+                    <p>Deprecations</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Controls -->
+        <section class="controls-panel">
+            <div class="search-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Search release notes by keywords, features, SQL syntax...">
+                <button class="clear-search" id="clearSearchBtn"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="filters-row">
+                <div class="filter-pills" id="filterPills">
+                    <button class="pill active" data-type="all">All</button>
+                    <button class="pill" data-type="feature">Features</button>
+                    <button class="pill" data-type="changed">Changes</button>
+                    <button class="pill" data-type="deprecated">Deprecated</button>
+                    <button class="pill" data-type="general">General / Notes</button>
+                </div>
+                <div class="sort-selector">
+                    <button class="btn btn-secondary" id="sortToggle" data-sort="desc">
+                        <i data-lucide="sort-desc" id="sortIcon"></i>
+                        <span id="sortText">Newest First</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Release Notes Feed -->
+        <main class="feed-section">
+            <!-- Loading Spinner -->
+            <div class="loading-state" id="loadingState">
+                <div class="spinner-outer">
+                    <div class="spinner-inner"></div>
+                </div>
+                <p>Parsing release notes feed...</p>
+            </div>
+
+            <!-- Error State -->
+            <div class="error-state hidden" id="errorState">
+                <div class="error-icon">
+                    <i data-lucide="wifi-off"></i>
+                </div>
+                <h3>Failed to load release notes</h3>
+                <p id="errorMessage">Please check your internet connection and try again.</p>
+                <button class="btn btn-secondary" id="retryBtn">Try Again</button>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">
+                    <i data-lucide="inbox"></i>
+                </div>
+                <h3>No updates match your filters</h3>
+                <p>Try refining your search query or choosing a different category.</p>
+                <button class="btn btn-outline" id="resetFiltersBtn">Reset Filters</button>
+            </div>
+
+            <!-- Main Feed -->
+            <div class="updates-feed hidden" id="updatesFeed">
+                <!-- Cards will be injected dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Twitter Preview Modal -->
+    <div class="modal-backdrop hidden" id="tweetModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg class="x-logo-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Share on X (Twitter)</span>
+                </div>
+                <button class="modal-close" id="closeModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="tweet-mockup">
+                    <div class="tweet-user">
+                        <div class="tweet-avatar">BQ</div>
+                        <div class="tweet-user-info">
+                            <span class="display-name">BigQuery Release Radar</span>
+                            <span class="handle">@BigQueryRadar</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tweet-textarea-wrapper">
+                        <textarea id="tweetTextarea" placeholder="What's happening?" maxlength="280"></textarea>
+                    </div>
+                    
+                    <div class="tweet-preview-link">
+                        <div class="preview-domain">cloud.google.com</div>
+                        <div class="preview-title">BigQuery - Release notes</div>
+                        <div class="preview-description">Official Google Cloud Platform release documentation.</div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <div class="char-count-container">
+                        <span id="charCount">0</span>/280
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" id="cancelTweetBtn">Cancel</button>
+                        <button class="btn btn-tweet" id="publishTweetBtn">
+                            <svg class="x-logo-btn-svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 6px;">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span>Post Update</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
